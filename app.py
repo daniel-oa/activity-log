@@ -12,7 +12,7 @@ if 'selected_date' not in st.session_state:
 if 'ai_error' not in st.session_state:
     st.session_state['ai_error'] = None
 
-folder_path = Path(r'C:\Users\Onabanjo Daniel\Desktop\Stuff\Career\Personal Projects\Activity Log Project\Records')
+folder_path = Path(__file__).resolve().parent/'Records'
 folder_path.mkdir(parents=True, exist_ok=True)
 template_path = Path('templates/daily_summary_template.docx')
 

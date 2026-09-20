@@ -52,7 +52,7 @@ with next:
     if selected_date.date() < datetime.now().date():
         next_button = st.button('Next Week →',on_click=go_next_week, width='stretch')
 
-folder_path = Path(r'C:\Users\Onabanjo Daniel\Desktop\Stuff\Career\Personal Projects\Activity Log Project\Records')
+folder_path = Path(__file__).resolve().parent.parent/'Records'
 folder_path.mkdir(parents=True, exist_ok=True)
 week_str = f"{week_start.strftime('%Y-%m-%d')} - {week_end.strftime('%Y-%m-%d')}"
 weekly_summary_file_name = f'{week_str} Weekly Summary.txt'
