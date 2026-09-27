@@ -14,7 +14,8 @@ if 'ai_error' not in st.session_state:
 
 folder_path = Path(__file__).resolve().parent/'Records'
 folder_path.mkdir(parents=True, exist_ok=True)
-template_path = Path('templates/daily_summary_template.docx')
+daily_summary_template_path = Path('templates/daily_summary_template.docx')
+work_report_template_path = Path('templates/work_report_template.docx')
 
 def go_previous():
     st.session_state['selected_date'] -= timedelta(days=1)
@@ -171,7 +172,11 @@ if st.session_state['daily_summary'] != '':
             daily_summary_file_path.write_text(st.session_state['daily_summary'], encoding='utf-8')
     if st.button('Export Daily Summary', width = 'stretch'):
         with st.spinner('Exporting to Word...'):
-            export_to_word(st.session_state['daily_summary'], folder_path/f'{date_str} Daily Summary.docx', template_path)  
+            export_to_word(st.session_state['daily_summary'], 
+                           folder_path/f'{date_str} Daily Summary.docx',
+                           daily_summary_template_path, 
+                           {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
+                           '{{daily_summary}}': st.session_state['daily_summary']})  
         st.success('Word document exported successfully')
     
 if st.session_state['work_report'] != '':
@@ -183,7 +188,11 @@ if st.session_state['work_report'] != '':
         work_report_file_path.write_text(st.session_state['work_report'], encoding='utf-8')
     if st.button('Export Work Report', width = 'stretch'):
         with st.spinner('Exporting to Word...'):
-            export_to_word(st.session_state['work_report'], folder_path/f'{date_str} Work Report.docx')  
+            export_to_word(st.session_state['work_report'], 
+                           folder_path/f'{date_str} Work Report.docx',
+                           work_report_template_path,
+                           {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
+                            '{{work_report}}': st.session_state['work_report']})  
         st.success('Word document exported successfully')
 st.markdown("""<div style = 'font-size:24px; font-weight:600; margin-top:32px; margin-bottom: 14px'>
                 🗓️ This Week

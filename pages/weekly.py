@@ -57,6 +57,7 @@ folder_path.mkdir(parents=True, exist_ok=True)
 week_str = f"{week_start.strftime('%Y-%m-%d')} - {week_end.strftime('%Y-%m-%d')}"
 weekly_summary_file_name = f'{week_str} Weekly Summary.txt'
 weekly_summary_file_path = folder_path/weekly_summary_file_name
+weekly_summary_template_path = Path('templates/weekly_summary_template.docx')
 
 day_list = [week_start+timedelta(days=day) for day in range(7)]
 weekly_text = ''
@@ -130,5 +131,10 @@ if st.session_state['weekly_summary'] != '':
         weekly_summary_file_path.write_text(st.session_state['weekly_summary'], encoding='utf-8')
     if st.button('Export Weekly Summary', width = 'stretch'):
         with st.spinner('Exporting to Word...'):
-            export_to_word(st.session_state['weekly_summary'], folder_path/f'{week_str} Weekly Summary.docx')  
+            export_to_word(st.session_state['weekly_summary'], 
+                           folder_path/f'{week_str} Weekly Summary.docx',
+                           weekly_summary_template_path,
+                           {'{{week_start}}':week_start.strftime('%A %d %B %Y.'),
+                            '{{week_end}}':week_end.strftime('%A %d %B %Y.'),
+                            '{{weekly_summary}}': st.session_state['weekly_summary']})  
         st.success('Word document exported successfully')
