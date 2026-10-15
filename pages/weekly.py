@@ -129,12 +129,18 @@ if st.session_state['weekly_summary'] != '':
     st.text_area('Edit Weekly Summary', key = 'weekly_summary', height = 'content')
     if st.button('Save Weekly Summary', width = 'stretch'):
         weekly_summary_file_path.write_text(st.session_state['weekly_summary'], encoding='utf-8')
+        st.success('Weekly Summary saved successfully.')
     if st.button('Export Weekly Summary', width = 'stretch'):
-        with st.spinner('Exporting to Word...'):
-            export_to_word(st.session_state['weekly_summary'], 
-                           folder_path/f'{week_str} Weekly Summary.docx',
-                           weekly_summary_template_path,
-                           {'{{week_start}}':week_start.strftime('%A %d %B %Y.'),
-                            '{{week_end}}':week_end.strftime('%A %d %B %Y.'),
-                            '{{weekly_summary}}': st.session_state['weekly_summary']})  
-        st.success('Word document exported successfully')
+        try:
+            with st.spinner('Exporting to Word...'):
+                export_to_word(st.session_state['weekly_summary'],
+                            folder_path/f'{week_str} Weekly Summary.docx',
+                            weekly_summary_template_path,
+                            {'{{week_start}}':week_start.strftime('%A %d %B %Y.'),
+                                '{{week_end}}':week_end.strftime('%A %d %B %Y.'),
+                                '{{weekly_summary}}': st.session_state['weekly_summary']})
+            st.success('Word document exported successfully')
+        except PermissionError:
+            st.error('Please close the Word document and try again.')
+        except Exception:
+            st.error('Could not export the Word document. Please try again.')

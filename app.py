@@ -120,6 +120,7 @@ text = st.text_area(' ', height = 'content', key='daily_text', label_visibility=
 
 if st.button('Save Note', width='stretch', type='primary'):
         file_path.write_text(text, encoding= 'utf-8')
+        st.success('Note saved successfully.')
 
 st.markdown("""
         <div style = 'font-size: 24px; font-weight: 600; margin-top: 32px; margin-bottom: 14px;'>
@@ -161,7 +162,7 @@ for date in day_list:
         exist_dict.update({date.strftime('%A %d %b'): False})
 
 if st.session_state['ai_error']:
-    st.error(st.session_state['ai_error'])
+    st.error("AI generation failed. Please try again in a moment. If the problem continues, check your API configuration.")
 
 if st.session_state['daily_summary'] != '':
     st.markdown("""<div style = 'font-size:24px; font-weight:600; margin-top:32px; margin-bottom: 8px'>
@@ -170,15 +171,20 @@ if st.session_state['daily_summary'] != '':
     st.text_area('Edit Daily Summary', key = 'daily_summary', height = 'content')
     if st.button('Save Daily Summary', width = 'stretch'):
             daily_summary_file_path.write_text(st.session_state['daily_summary'], encoding='utf-8')
+            st.success('Daily Summary saved successfully.')
     if st.button('Export Daily Summary', width = 'stretch'):
-        with st.spinner('Exporting to Word...'):
-            export_to_word(st.session_state['daily_summary'], 
-                           folder_path/f'{date_str} Daily Summary.docx',
-                           daily_summary_template_path, 
-                           {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
-                           '{{daily_summary}}': st.session_state['daily_summary']})  
-        st.success('Word document exported successfully')
-    
+        try:
+            with st.spinner('Exporting to Word...'):
+                export_to_word(st.session_state['daily_summary'],
+                            folder_path/f'{date_str} Daily Summary.docx',
+                            daily_summary_template_path,
+                            {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
+                            '{{daily_summary}}': st.session_state['daily_summary']})
+            st.success('Word document exported successfully')
+        except PermissionError:
+            st.error('Please close the Word document and try again.')
+        except Exception:
+            st.error('Could not export the Word document. Please try again.')
 if st.session_state['work_report'] != '':
     st.markdown("""<div style = 'font-size:24px; font-weight:600; margin-top:32px; margin-bottom: 8px'>
                     💼 Work Report
@@ -186,14 +192,20 @@ if st.session_state['work_report'] != '':
     st.text_area('Edit Work Report', key = 'work_report', height = 'content')
     if st.button('Save Work Report', width = 'stretch'):
         work_report_file_path.write_text(st.session_state['work_report'], encoding='utf-8')
+        st.success('Work Report saved successfully.')
     if st.button('Export Work Report', width = 'stretch'):
-        with st.spinner('Exporting to Word...'):
-            export_to_word(st.session_state['work_report'], 
-                           folder_path/f'{date_str} Work Report.docx',
-                           work_report_template_path,
-                           {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
-                            '{{work_report}}': st.session_state['work_report']})  
-        st.success('Word document exported successfully')
+        try:
+            with st.spinner('Exporting to Word...'):
+                export_to_word(st.session_state['work_report'],
+                            folder_path/f'{date_str} Work Report.docx',
+                            work_report_template_path,
+                            {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
+                                '{{work_report}}': st.session_state['work_report']})
+            st.success('Word document exported successfully')
+        except PermissionError:
+            st.error('Please close the Word document and try again.')
+        except Exception:
+            st.error('Could not export the Word document. Please try again.')
 st.markdown("""<div style = 'font-size:24px; font-weight:600; margin-top:32px; margin-bottom: 14px'>
                 🗓️ This Week
                 </div>""", unsafe_allow_html = True)
