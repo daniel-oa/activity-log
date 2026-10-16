@@ -1,48 +1,42 @@
 
-# Activity Log
+# Activity Log 📝
 
-**Turn everyday activity notes into summaries and professional reports with AI.**
+**Turn everyday activity notes into useful summaries and work reports.**
 
-Activity Log is a Streamlit application for recording daily activities, generating AI-assisted summaries and work reports, and exporting polished documents to Word. It supports local record storage and a cloud mode with user authentication and Supabase-backed storage.
+Activity Log is a Streamlit app for keeping track of what you do throughout the day without having to write every update as a formal report. Log activities naturally, then use AI to turn those notes into daily summaries, professional work reports, and weekly overviews.
 
-**[Try Activity Log](https://activity-log.streamlit.app)** · **[View Source Code](https://github.com/daniel-oa/activity-log)**
+Less time formatting reports. More time getting things done.
 
-## Features
+🔗 **[Try Activity Log](https://activity-log.streamlit.app)**
 
-- **Daily Activity Logging** — Record activities naturally without needing to organize them into a formal report.
-- **AI-Generated Daily Summaries** — Turn daily notes into concise summaries.
-- **Professional Work Reports** — Transform activity logs into structured work reports.
-- **Weekly Summaries** — Consolidate activities across a week into a higher-level summary.
-- **Editable Outputs** — Review and edit generated summaries and reports before saving or exporting.
-- **Word Export** — Download reports as Word documents using customizable report templates.
-- **Local and Cloud Storage** — Store records locally or use Supabase-backed cloud storage.
-- **User Authentication** — Create an account, confirm your email, and sign in to access your records in cloud mode.
-- **AI Integration** — Use Google's Gemini API to generate summaries and reports.
+## What can it do?
 
-## How It Works
+- **Log daily activities** — Record what you worked on in your own words.
+- **Generate daily summaries** — Turn your notes into a clear overview of the day.
+- **Create work reports** — Convert informal activity logs into more professional reports.
+- **Review the week** — Generate a weekly summary from your recorded activities.
+- **Edit AI-generated content** — Refine the output before saving or exporting it.
+- **Export to Word** — Download summaries and reports as Word documents.
+- **Keep your records** — Use local storage or cloud storage with account authentication, depending on the app mode.
 
-1. **Record:** Write your daily activities in plain language.
-2. **Generate:** Use AI to create a daily summary, work report, or weekly summary.
-3. **Review:** Edit the generated content to make sure it accurately reflects your work.
-4. **Save:** Save the output so it can be retrieved later.
-5. **Export:** Download your report as a Word document.
+## How it works
 
-The goal is to make activity reporting less repetitive while keeping the original notes available for reference.
+1. **Write it down.** Record your activities as they happen or at the end of the day.
+2. **Generate.** Choose a daily summary, work report, or weekly summary.
+3. **Review and edit.** Check the generated content and make any necessary corrections.
+4. **Save or export.** Save your output in the app or download it as a Word document.
 
-## Technology Stack
+The goal is simple: you shouldn't have to remember everything you did at the end of the day or start every report from scratch.
 
-- **Python** — Application logic and data handling
-- **Streamlit** — User interface
-- **Google Gemini API** — AI-assisted text generation
-- **Supabase** — Authentication and cloud data storage
-- **python-docx** — Word document generation
+## Built with
 
-## Getting Started
+- Python
+- Streamlit
+- Google Gemini API
+- Supabase
+- python-docx
 
-### Prerequisites
-
-- Python installed on your computer
-- A Google Gemini API key for AI generation
+## Run locally
 
 ### 1. Clone the repository
 
@@ -51,21 +45,19 @@ git clone https://github.com/daniel-oa/activity-log.git
 cd activity-log
 ```
 
-### 2. Create a virtual environment
+### 2. Create and activate a virtual environment
 
 ```bash
 python -m venv .venv
 ```
 
-Activate the environment.
-
-**Windows:**
+On Windows:
 
 ```bash
 .venv\Scripts\activate
 ```
 
-**macOS / Linux:**
+On macOS/Linux:
 
 ```bash
 source .venv/bin/activate
@@ -77,76 +69,37 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Configure the Gemini API key
+### 4. Configure your Gemini API key
 
-Set the `GEMINI_API_KEY` environment variable, or use the application's API key input where available.
+Set the `GEMINI_API_KEY` environment variable, or enter your key in the app's API-key input where available.
 
-**Windows PowerShell:**
+You can get a Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey). Keep API keys and other secrets out of your source code and Git history.
 
-```powershell
-$env:GEMINI_API_KEY="your_api_key_here"
-```
-
-**macOS / Linux:**
-
-```bash
-export GEMINI_API_KEY="your_api_key_here"
-```
-
-Get an API key through [Google AI Studio](https://aistudio.google.com/).
-
-Never commit API keys or other secrets to GitHub.
-
-### 5. Run the application
+### 5. Start the app
 
 ```bash
 streamlit run app.py
 ```
 
-The application should open in your browser.
+Cloud mode also requires the appropriate Supabase configuration. The exact configuration depends on the app's deployment setup.
 
-## Storage and Privacy
+## Storage and privacy
 
-Activity Log supports two operating modes:
+Activity Log supports local and cloud modes:
 
-- **Local mode:** Activity records and generated outputs are stored in the local `Records/` directory.
-- **Cloud mode:** Supabase handles authentication and cloud record storage, with access policies intended to restrict users to their own records.
+- **Local mode:** Activity records and generated outputs are stored locally in the `Records/` directory.
+- **Cloud mode:** User authentication and cloud records are handled through Supabase, with database access controlled by Row Level Security policies.
 
-AI generation sends the relevant activity content to the configured Gemini API. Avoid submitting sensitive information unless you are comfortable sharing it with the service.
+AI generation sends the relevant activity content to Google Gemini to produce the requested output. Avoid entering information you would not want processed by the service.
 
-The `Records/` directory and secret configuration files should remain excluded from version control. Never expose Supabase service-role keys or other privileged credentials in client-facing code.
+## What's next?
 
-Cloud mode requires the appropriate Supabase configuration and database policies. Follow the project's configuration in `utils/` when setting up your own deployment.
+Activity Log is a work in progress. Planned improvements include:
 
-## Project Structure
+- **Better Word templates** — The current templates are basic and functional. More polished layouts, improved formatting, and greater customization are planned.
+- **Automatic saving** — Save generated summaries and reports without requiring a separate manual save action.
+- **More useful insights** — Build on recorded activities to make weekly reviews more informative.
 
-```text
-activity-log/
-├── ai/             # AI generation logic
-├── pages/          # Additional Streamlit pages
-├── templates/      # Report templates
-├── utils/          # Authentication, storage, and helpers
-├── Records/        # Local activity records (not committed)
-├── app.py          # Main application
-├── requirements.txt
-├── .gitignore
-└── README.md
-```
+## A note on AI-generated content
 
-## Current Scope
-
-Activity Log focuses on daily activity capture, AI-assisted reporting, persistent record storage, and Word document export.
-
-Generated content should be reviewed before use, especially when preparing formal work reports. AI-generated summaries may omit details or misinterpret notes.
-
-## Future Improvements
-
-- Automatically save generated outputs
-- Further improve report formatting and customization
-- Expand activity analytics and reporting options
-
-## Author
-
-**Daniel Onabanjo**
-
-[GitHub](https://github.com/daniel-oa)
+Generated summaries and reports may need editing. Review the output for accuracy before using it as a formal record or submitting it as a work report.
