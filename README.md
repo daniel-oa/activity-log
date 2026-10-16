@@ -9,6 +9,10 @@ Less time formatting reports. More time getting things done.
 
 🔗 **[Try Activity Log](https://activity-log.streamlit.app)** — Access it online with an account, or [run it locally](#run-locally) without creating one.
 
+## Screenshot
+
+![Activity Log application](images/activity-log.png)
+
 ## What can it do?
 
 - **Log daily activities** — Record what you worked on in your own words.
