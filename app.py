@@ -90,25 +90,27 @@ if 'daily_summary' not in st.session_state:
         st.session_state['daily_summary'] = ''
 
 if selected_date.date() != st.session_state['work_report_date']:
-    if app_mode == 'cloud':
-        from utils.records import load_record
-        st.session_state['work_report'] = load_record(date_str,'work_report')
-    elif work_report_file_path.exists() and work_report_file_path.is_file():
-        st.session_state['work_report'] = work_report_file_path.read_text(encoding='utf-8')
-    else:
-        st.session_state['work_report'] = ''
     st.session_state['work_report_date'] = selected_date.date()
 
 if selected_date.date() != st.session_state['daily_summary_date']:
-    if app_mode == 'cloud':
-        from utils.records import load_record
-        st.session_state['daily_summary'] = load_record(date_str, 'daily_summary')
-    elif daily_summary_file_path.exists() and daily_summary_file_path.is_file():
+    st.session_state['daily_summary_date'] = selected_date.date()
+
+if app_mode == 'cloud':
+    from utils.records import load_record
+
+    st.session_state['work_report'] = load_record(date_str, 'work_report')
+    st.session_state['daily_summary'] = load_record(date_str, 'daily_summary')
+else:
+    if work_report_file_path.exists() and work_report_file_path.is_file():
+        st.session_state['work_report'] = work_report_file_path.read_text(encoding='utf-8')
+    else:
+        st.session_state['work_report'] = ''
+
+    if daily_summary_file_path.exists() and daily_summary_file_path.is_file():
         st.session_state['daily_summary'] = daily_summary_file_path.read_text(encoding='utf-8')
     else:
         st.session_state['daily_summary'] = ''
-    st.session_state['daily_summary_date'] = selected_date.date()
-
+        
 st.markdown("""
                 <div style = 'text-align: center; margin-bottom: 4px;'>
                     <div style = 'font-size: 40px; font-weight: 700;'>

@@ -72,15 +72,16 @@ weekly_summary_template_path = Path('templates/weekly_summary_template.docx')
 day_list = [week_start+timedelta(days=day) for day in range(7)]
 weekly_text = ''
 
-if st.session_state['weekly_summary_date'] != week_start.date():
-    if app_mode == 'cloud':
-        from utils.records import load_record
-        st.session_state['weekly_summary'] = load_record(week_start.strftime('%Y-%m-%d'),'weekly_summary')
-    elif weekly_summary_file_path.exists() and weekly_summary_file_path.is_file():
+if app_mode == 'cloud':
+    from utils.records import load_record
+    st.session_state['weekly_summary'] = load_record(week_start.strftime('%Y-%m-%d'),'weekly_summary')
+elif st.session_state['weekly_summary_date'] != week_start.date():
+    if weekly_summary_file_path.exists() and weekly_summary_file_path.is_file():
         st.session_state['weekly_summary'] = weekly_summary_file_path.read_text(encoding='utf-8')
     else:
         st.session_state['weekly_summary'] = ''
-    st.session_state['weekly_summary_date'] = week_start.date()
+
+st.session_state['weekly_summary_date'] = week_start.date()
 
 st.markdown("""<div style = 'font-size:24px; font-weight: 600; margin-top:32px; margin-bottom: 14px'>
                 📖 Daily Records
