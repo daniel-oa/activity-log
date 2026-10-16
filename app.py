@@ -2,10 +2,26 @@ import streamlit as st
 from datetime import datetime, timedelta
 from pathlib import Path
 from ai.gemini import generate_work_report, generate_daily_summary
-from utils.word_export import export_to_word
+from utils.word_export import export_to_word, create_word_document
+from utils.app_mode import get_app_mode
+from utils.api_key import get_api_key
 
 st.set_page_config(page_title='Activity Log')
 
+app_mode = get_app_mode()
+
+if app_mode == 'cloud':
+    from utils.auth import render_authentication
+    if not render_authentication():
+        st.stop()
+
+with st.sidebar:
+    st.subheader('AI Settings')
+    with st.form("gemini_key_form"):
+        st.text_input("Gemini API Key", type="password", key="gemini_api_key_input",
+                      help="Optional. Required only for AI generation.")
+        st.form_submit_button("Apply API Key")
+    st.caption("Don't have a key? [Get one from Google AI Studio](https://aistudio.google.com/apikey)")
 if 'selected_date' not in st.session_state:
     st.session_state['selected_date'] = datetime.now()
 
@@ -43,39 +59,57 @@ if 'daily_summary_date' not in st.session_state:
     st.session_state['daily_summary_date'] = selected_date.date()
 
 if 'daily_text' not in st.session_state:
-    if file_path.exists() and file_path.is_file():
+    if app_mode == 'cloud':
+        from utils.records import load_record
+        st.session_state['daily_text'] = load_record(date_str, 'daily_note')
+    elif file_path.exists() and file_path.is_file():
         st.session_state['daily_text'] = file_path.read_text(encoding='utf-8')
     else:
         st.session_state['daily_text'] = ''
 
 if selected_date.date() != st.session_state['text_date']:
-    if file_path.exists() and file_path.is_file():
+    if app_mode == 'cloud':
+        from utils.records import load_record
+        st.session_state['daily_text'] = load_record(date_str, 'daily_note')
+    elif file_path.exists() and file_path.is_file():
         st.session_state['daily_text'] = file_path.read_text(encoding = 'utf-8')
     else:
         st.session_state['daily_text'] =''
     st.session_state['text_date'] = selected_date.date()
 
 if 'work_report' not in st.session_state:
-    if work_report_file_path.exists() and work_report_file_path.is_file():
+    if app_mode == 'cloud':
+        from utils.records import load_record
+        st.session_state['work_report'] = load_record(date_str,'work_report')
+    elif work_report_file_path.exists() and work_report_file_path.is_file():
         st.session_state['work_report'] = work_report_file_path.read_text(encoding='utf-8')
     else:
         st.session_state['work_report'] = ''
 
 if 'daily_summary' not in st.session_state:
-    if daily_summary_file_path.exists() and daily_summary_file_path.is_file():
+    if app_mode == 'cloud':
+        from utils.records import load_record
+        st.session_state['daily_summary'] = load_record(date_str, 'daily_summary')
+    elif daily_summary_file_path.exists() and daily_summary_file_path.is_file():
         st.session_state['daily_summary'] = daily_summary_file_path.read_text(encoding = 'utf-8')
     else:
         st.session_state['daily_summary'] = ''
 
 if selected_date.date() != st.session_state['work_report_date']:
-    if work_report_file_path.exists() and work_report_file_path.is_file():
+    if app_mode == 'cloud':
+        from utils.records import load_record
+        st.session_state['work_report'] = load_record(date_str,'work_report')
+    elif work_report_file_path.exists() and work_report_file_path.is_file():
         st.session_state['work_report'] = work_report_file_path.read_text(encoding='utf-8')
     else:
         st.session_state['work_report'] = ''
     st.session_state['work_report_date'] = selected_date.date()
 
 if selected_date.date() != st.session_state['daily_summary_date']:
-    if daily_summary_file_path.exists() and daily_summary_file_path.is_file():
+    if app_mode == 'cloud':
+        from utils.records import load_record
+        st.session_state['daily_summary'] = load_record(date_str, 'daily_summary')
+    elif daily_summary_file_path.exists() and daily_summary_file_path.is_file():
         st.session_state['daily_summary'] = daily_summary_file_path.read_text(encoding='utf-8')
     else:
         st.session_state['daily_summary'] = ''
@@ -119,7 +153,11 @@ st.markdown(
 text = st.text_area(' ', height = 'content', key='daily_text', label_visibility='collapsed')
 
 if st.button('Save Note', width='stretch', type='primary'):
-        file_path.write_text(text, encoding= 'utf-8')
+        if app_mode == 'cloud':
+            from utils.records import save_record
+            save_record(st.session_state['selected_date'].strftime('%Y-%m-%d'), 'daily_note', text)
+        else:
+            file_path.write_text(text, encoding= 'utf-8')
         st.success('Note saved successfully.')
 
 st.markdown("""
@@ -131,38 +169,50 @@ st.markdown("""
 left, right = st.columns([1,1])
 with left:
     if st.button('Daily Summary', width = 'stretch'):
-        with st.spinner('Generating daily summary...'):
-            result = generate_daily_summary(text)
-        if result['success']:
-            st.session_state['daily_summary'] = result['summary']
-            st.session_state['ai_error'] = None
+        api_key = get_api_key()
+        if not api_key:
+            st.warning('Enter your Gemini API key in the sidebar to generate a summary.')
         else:
-            st.session_state['ai_error'] = result['error']
-    
+            with st.spinner('Generating daily summary...'):
+                result = generate_daily_summary(text, api_key)
+            if result['success']:
+                st.session_state['daily_summary'] = result['summary']
+                st.session_state['ai_error'] = None
+            else:
+                st.session_state['ai_error'] = result['error']
+        
 with right:
     if st.button('Work Report',  width = 'stretch'):
-        with st.spinner('Generating work report...'):
-            result = generate_work_report(text)
-        if result['success']:
-            st.session_state['work_report'] = result['report']
-            st.session_state['ai_error'] = None
+        api_key = get_api_key()
+        if not api_key:
+            st.warning('Enter your Gemini API key in the sidebar to generate a report.')
         else:
-            st.session_state['ai_error'] = result['error']
+            with st.spinner('Generating work report...'):
+                result = generate_work_report(text, api_key)
+            if result['success']:
+                st.session_state['work_report'] = result['report']
+                st.session_state['ai_error'] = None
+            else:
+                st.session_state['ai_error'] = result['error']
     
 week_start = selected_date - timedelta(days=(selected_date.weekday()+1)%7)
 day_list = [week_start+timedelta(days=day) for day in range(7)]
 
 exist_dict = {}
+
 for date in day_list:
-    date_file_name = f"{date.strftime('%Y-%m-%d')}.txt"
-    date_file_path = folder_path/date_file_name
-    if date_file_path.exists() and date_file_path.is_file():
-        exist_dict.update({date.strftime('%A %d %b'): True})
+    if app_mode == 'cloud':
+        from utils.records import load_record
+        has_record = bool(load_record(date.strftime('%Y-%m-%d'), 'daily_note'))
     else:
-        exist_dict.update({date.strftime('%A %d %b'): False})
+        date_file_name = f"{date.strftime('%Y-%m-%d')}.txt"
+        date_file_path = folder_path/date_file_name
+        has_record = date_file_path.is_file()
+
+    exist_dict[date.strftime('%A %d %b')] = has_record
 
 if st.session_state['ai_error']:
-    st.error("AI generation failed. Please try again in a moment. If the problem continues, check your API configuration.")
+    st.error(f"AI generation failed: {st.session_state['ai_error']}")
 
 if st.session_state['daily_summary'] != '':
     st.markdown("""<div style = 'font-size:24px; font-weight:600; margin-top:32px; margin-bottom: 8px'>
@@ -170,42 +220,69 @@ if st.session_state['daily_summary'] != '':
                 </div>""", unsafe_allow_html = True)
     st.text_area('Edit Daily Summary', key = 'daily_summary', height = 'content')
     if st.button('Save Daily Summary', width = 'stretch'):
-            daily_summary_file_path.write_text(st.session_state['daily_summary'], encoding='utf-8')
+            if app_mode == 'cloud':
+                from utils.records import save_record
+                save_record(date_str, 'daily_summary', st.session_state['daily_summary'])
+            else:
+                daily_summary_file_path.write_text(st.session_state['daily_summary'], encoding='utf-8')
             st.success('Daily Summary saved successfully.')
-    if st.button('Export Daily Summary', width = 'stretch'):
+    
+    if app_mode == 'cloud':
         try:
-            with st.spinner('Exporting to Word...'):
-                export_to_word(st.session_state['daily_summary'],
-                            folder_path/f'{date_str} Daily Summary.docx',
-                            daily_summary_template_path,
-                            {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
-                            '{{daily_summary}}': st.session_state['daily_summary']})
-            st.success('Word document exported successfully')
-        except PermissionError:
-            st.error('Please close the Word document and try again.')
+            word_buffer = create_word_document(daily_summary_template_path,
+                                                {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
+                                                '{{daily_summary}}': st.session_state['daily_summary']})
+            st.download_button('Download Daily Summary', data = word_buffer, file_name=f'{date_str} Daily Summary.docx',
+                                mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+                                key=f'download_daily_summary_{date_str}', width='stretch')
         except Exception:
-            st.error('Could not export the Word document. Please try again.')
+            st.error('Could not prepare the Word document. Please try again.')
+    else:
+        if st.button('Export Daily Summary', width='stretch'):
+            try:
+                with st.spinner('Exporting to Word...'):
+                    export_to_word(st.session_state['daily_summary'], folder_path/f'{date_str} Daily Summary.docx',
+                                   daily_summary_template_path, {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
+                                                                 '{{daily_summary}}': st.session_state['daily_summary']})
+                    st.success('Daily Summary exported successfully!')
+            except PermissionError:
+                st.error('Please close the Word document and try again.')
+            except Exception:
+                st.error('Could not export the Word document. Please try again.')
 if st.session_state['work_report'] != '':
     st.markdown("""<div style = 'font-size:24px; font-weight:600; margin-top:32px; margin-bottom: 8px'>
                     💼 Work Report
                     </div>""", unsafe_allow_html = True)
     st.text_area('Edit Work Report', key = 'work_report', height = 'content')
     if st.button('Save Work Report', width = 'stretch'):
-        work_report_file_path.write_text(st.session_state['work_report'], encoding='utf-8')
+        if app_mode == 'cloud':
+            from utils.records import save_record
+            save_record(date_str,'work_report', st.session_state['work_report'])
+        else:
+            work_report_file_path.write_text(st.session_state['work_report'], encoding='utf-8')
         st.success('Work Report saved successfully.')
-    if st.button('Export Work Report', width = 'stretch'):
+    
+    if app_mode == 'cloud':
         try:
-            with st.spinner('Exporting to Word...'):
-                export_to_word(st.session_state['work_report'],
-                            folder_path/f'{date_str} Work Report.docx',
-                            work_report_template_path,
-                            {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
-                                '{{work_report}}': st.session_state['work_report']})
-            st.success('Word document exported successfully')
-        except PermissionError:
-            st.error('Please close the Word document and try again.')
+            word_buffer = create_word_document(work_report_template_path, {'{{date}}': selected_date.strftime('%A %d %B %Y.'), 
+                                                                            '{{work_report}}': st.session_state['work_report']})
+            st.download_button('Download Work Report',data=word_buffer,file_name=f'{date_str} Work Report.docx',
+                                mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                key=f'download_work_report_{date_str}', width='stretch')
         except Exception:
-            st.error('Could not export the Word document. Please try again.')
+            st.error('Could not prepare the Word document. Please try again.')
+    else:
+        if st.button('Export Work Report', width='stretch'):
+            try:
+                with st.spinner('Exporting to Word...'):
+                    export_to_word( st.session_state['work_report'], folder_path / f'{date_str} Work Report.docx',
+                        work_report_template_path, {'{{date}}': selected_date.strftime('%A %d %B %Y.'), 
+                                                    '{{work_report}}': st.session_state['work_report']})
+                st.success('Work Report exported successfully!')
+            except PermissionError:
+                st.error('Please close the Word document and try again.')
+            except Exception:
+                st.error('Could not export the Word document. Please try again.')
 st.markdown("""<div style = 'font-size:24px; font-weight:600; margin-top:32px; margin-bottom: 14px'>
                 🗓️ This Week
                 </div>""", unsafe_allow_html = True)
