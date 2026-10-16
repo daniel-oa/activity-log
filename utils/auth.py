@@ -31,7 +31,8 @@ def render_authentication():
             if login_submitted:
                 try:
                     response = supabase.auth.sign_in_with_password({'email': email,
-                                                                    'password': password,})
+                                                                    'password': password,
+                                                                    'options': {'email_redirect_to': 'https://activity-log.streamlit.app'}})
                     if response.user:
                         st.session_state['user'] = response.user
                         st.rerun()
