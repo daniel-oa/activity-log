@@ -4,7 +4,7 @@ from pathlib import Path
 from ai.gemini import generate_weekly_summary
 from utils.word_export import export_to_word, create_word_document
 from utils.app_mode import get_app_mode
-from utils.api_key import get_api_key
+from utils.api_key import get_api_key, render_api_key_sidebar
 
 st.set_page_config(page_title='Weekly Summary')
 
@@ -14,6 +14,7 @@ if app_mode == 'cloud':
     from utils.auth import render_authentication
     if not render_authentication():
         st.stop()
+render_api_key_sidebar()
 
 st.markdown("""
                 <div style = 'text-align: center; margin-bottom: 4px;'>

@@ -4,7 +4,7 @@ from pathlib import Path
 from ai.gemini import generate_work_report, generate_daily_summary
 from utils.word_export import export_to_word, create_word_document
 from utils.app_mode import get_app_mode
-from utils.api_key import get_api_key
+from utils.api_key import get_api_key, render_api_key_sidebar
 
 st.set_page_config(page_title='Activity Log')
 
@@ -15,13 +15,7 @@ if app_mode == 'cloud':
     if not render_authentication():
         st.stop()
 
-with st.sidebar:
-    st.subheader('AI Settings')
-    with st.form("gemini_key_form"):
-        st.text_input("Gemini API Key", type="password", key="gemini_api_key_input",
-                      help="Optional. Required only for AI generation.")
-        st.form_submit_button("Apply API Key")
-    st.caption("Don't have a key? [Get one from Google AI Studio](https://aistudio.google.com/apikey)")
+render_api_key_sidebar()
 if 'selected_date' not in st.session_state:
     st.session_state['selected_date'] = datetime.now()
 
