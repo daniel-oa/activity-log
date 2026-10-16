@@ -7,7 +7,7 @@ Activity Log is a Streamlit app for keeping track of what you do throughout the 
 
 Less time formatting reports. More time getting things done.
 
-🔗 **[Try Activity Log](https://activity-log.streamlit.app)**
+🔗 **[Try Activity Log](https://activity-log.streamlit.app)** — Access it online with an account, or [run it locally](#run-locally) without creating one.
 
 ## What can it do?
 
