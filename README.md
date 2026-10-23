@@ -110,4 +110,4 @@ Generated summaries and reports may need editing. Review the output for accuracy
 
 ## Acknowledgements
 
-AI tools were used to assist with UI styling and visual design improvements. Application logic and functionality remain part of the project's existing implementation.
+AI tools were used to assist with UI design and code improvements.
