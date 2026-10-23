@@ -5,8 +5,10 @@ from ai.gemini import generate_weekly_summary
 from utils.word_export import export_to_word, create_word_document
 from utils.app_mode import get_app_mode
 from utils.api_key import get_api_key, render_api_key_sidebar
+from utils.ui import load_css, page_header, date_label, section_heading, week_strip
 
 st.set_page_config(page_title='Weekly Summary')
+load_css()
 
 app_mode = get_app_mode()
 
@@ -16,16 +18,8 @@ if app_mode == 'cloud':
         st.stop()
 render_api_key_sidebar()
 
-st.markdown("""
-                <div style = 'text-align: center; margin-bottom: 4px;'>
-                    <div style = 'font-size: 40px; font-weight: 700;'>
-                        Weekly Summary
-                    </div>
-                    <div style = 'font-size: 16px; color: #888;'>
-                        Look back at your week
-                    </div>
-                </div>
-                """,unsafe_allow_html= True)
+page_header('Weekly Summary', 'Look back at your week')
+
 def go_previous_week():
     st.session_state['selected_date'] -= timedelta(days=7)
 def go_this_week():
@@ -35,6 +29,8 @@ def go_next_week():
 
 if 'selected_date' not in st.session_state:
     st.session_state['selected_date'] = datetime.now()
+
+weekly_summary_needs_load = 'weekly_summary' not in st.session_state
 
 if 'weekly_summary' not in st.session_state:
     st.session_state['weekly_summary'] = ''
@@ -49,9 +45,7 @@ selected_date = st.session_state['selected_date']
 week_start = selected_date - timedelta(days = (selected_date.weekday() + 1) % 7)
 week_end = week_start + timedelta(days = 6)
 
-st.markdown(f"""<div style = 'text-align: center; font-size:18px; margin-bottom: 18px'>
-                {week_start.strftime('%d %B')} - {week_end.strftime('%d %B, %Y')}
-                </div>""", unsafe_allow_html = True)
+date_label(f"{week_start.strftime('%d %B')} - {week_end.strftime('%d %B, %Y')}")
 
 previous,today,next = st.columns(3)
 with previous:
@@ -72,20 +66,18 @@ weekly_summary_template_path = Path('templates/weekly_summary_template.docx')
 day_list = [week_start+timedelta(days=day) for day in range(7)]
 weekly_text = ''
 
-if app_mode == 'cloud':
-    from utils.records import load_record
-    st.session_state['weekly_summary'] = load_record(week_start.strftime('%Y-%m-%d'),'weekly_summary')
-elif st.session_state['weekly_summary_date'] != week_start.date():
-    if weekly_summary_file_path.exists() and weekly_summary_file_path.is_file():
+if weekly_summary_needs_load or st.session_state['weekly_summary_date'] != week_start.date():
+    if app_mode == 'cloud':
+        from utils.records import load_record
+        st.session_state['weekly_summary'] = load_record(week_start.strftime('%Y-%m-%d'),'weekly_summary')
+    elif weekly_summary_file_path.exists() and weekly_summary_file_path.is_file():
         st.session_state['weekly_summary'] = weekly_summary_file_path.read_text(encoding='utf-8')
     else:
         st.session_state['weekly_summary'] = ''
 
 st.session_state['weekly_summary_date'] = week_start.date()
 
-st.markdown("""<div style = 'font-size:24px; font-weight: 600; margin-top:32px; margin-bottom: 14px'>
-                📖 Daily Records
-                </div>""", unsafe_allow_html = True)
+section_heading('Daily Records')
 
 exist_dict = {}
 
@@ -107,29 +99,9 @@ for date in day_list:
     if daily_text:
         weekly_text += (f"{date.strftime('%A %d %B, %Y')}: {daily_text}\n\n")
 
-week_columns = st.columns(7) 
-for column, date in zip(week_columns, day_list):
-    with column:
-        is_today= date.date() == datetime.now().date()
-        has_record = exist_dict[date.strftime('%A %d %b')]
-        day_weight = '700' if is_today else '400'
-        day_color = '#000' if is_today else '#888'
-        status = '✓' if has_record else '—'
+week_strip(day_list, exist_dict)
 
-        st.markdown(f"""
-                    <div style = 'text-align: center;'>
-                        <div style = 'font-size: 13px; font-weight: {day_weight}; color: {day_color};'>
-                            {date.strftime('%a')}
-                        </div>
-                        <div style = 'font-size: 20px; font-weight: 600; margin-top: 4px;'>
-                            {status}
-                        </div>
-                    </div>
-                    """,unsafe_allow_html= True)
-
-st.markdown("""<div style = 'font-size:24px; font-weight: 600; margin-top:32px; margin-bottom: 14px'>
-                ✨ Create Weekly Summary
-                </div>""", unsafe_allow_html = True)
+section_heading('Create Weekly Summary')
 
 if st.button('Weekly Summary', width = 'stretch'):
     api_key = get_api_key()
@@ -143,46 +115,49 @@ if st.button('Weekly Summary', width = 'stretch'):
             st.session_state['ai_error'] = None
         else:
             st.session_state['ai_error'] = result['error']
-            
+
 if st.session_state['ai_error']:
     st.error(f"AI generation failed: {st.session_state['ai_error']}")
 
+if st.session_state['weekly_summary'] == '':
+    st.markdown("<div class='al-empty'>Your weekly summary will appear here.</div>",
+                unsafe_allow_html=True)
+
 if st.session_state['weekly_summary'] != '':
-    st.markdown("""<div style = 'font-size:24px; font-weight:600; margin-top:32px; margin-bottom: 8px'>
-                📔 Weekly Summary
-                </div>""", unsafe_allow_html = True)
-    st.text_area('Edit Weekly Summary', key = 'weekly_summary', height = 'content')
-    if st.button('Save Weekly Summary', width = 'stretch'):
+    section_heading('Weekly Summary')
+    with st.container(border=True):
+        st.text_area('Edit Weekly Summary', key = 'weekly_summary', height = 'content')
+        if st.button('Save Weekly Summary', width = 'stretch'):
+            if app_mode == 'cloud':
+                from utils.records import save_record
+                save_record(week_start.strftime('%Y-%m-%d'),'weekly_summary',st.session_state['weekly_summary'])
+            else:
+                weekly_summary_file_path.write_text(st.session_state['weekly_summary'], encoding='utf-8')
+            st.success('Weekly Summary saved successfully.')
+
         if app_mode == 'cloud':
-            from utils.records import save_record
-            save_record(week_start.strftime('%Y-%m-%d'),'weekly_summary',st.session_state['weekly_summary'])
-        else:
-            weekly_summary_file_path.write_text(st.session_state['weekly_summary'], encoding='utf-8')
-        st.success('Weekly Summary saved successfully.')
- 
-    if app_mode == 'cloud':
-        try:
-            word_buffer = create_word_document(weekly_summary_template_path,
-                                               {'{{date}}': week_start.strftime('%A %d %B %Y.'),
-                                                '{{weekly_summary}}': st.session_state['weekly_summary']})
-            st.download_button('Download Weekly Summary', data=word_buffer, file_name=f'{week_str} Weekly Summary.docx',
-                               mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
-                               key=f'download_weekly_summary_{week_str}', width='stretch')
-        except Exception as e:
-            st.error(f'Could not prepare the Word document: {e}')
-
-    else:
-        if st.button('Export Weekly Summary', width='stretch'):
             try:
-                with st.spinner('Exporting to Word...'):
-                    export_to_word(st.session_state['weekly_summary'], folder_path / f'{week_str} Weekly Summary.docx',
-                                    weekly_summary_template_path,{'{{date}}': week_start.strftime('%A %d %B %Y.'),
-                                                                  '{{weekly_summary}}': st.session_state['weekly_summary']})
-
-                st.success('Weekly Summary exported successfully!')
-
-            except PermissionError:
-                st.error('Please close the Word document and try again.')
-
+                word_buffer = create_word_document(weekly_summary_template_path,
+                                                   {'{{date}}': week_start.strftime('%A %d %B %Y.'),
+                                                    '{{weekly_summary}}': st.session_state['weekly_summary']})
+                st.download_button('Download Weekly Summary', data=word_buffer, file_name=f'{week_str} Weekly Summary.docx',
+                                   mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                   key=f'download_weekly_summary_{week_str}', width='stretch')
             except Exception as e:
-                st.error(f'Could not export the Word document: {e}')
+                st.error(f'Could not prepare the Word document: {e}')
+
+        else:
+            if st.button('Export Weekly Summary', width='stretch'):
+                try:
+                    with st.spinner('Exporting to Word...'):
+                        export_to_word(st.session_state['weekly_summary'], folder_path / f'{week_str} Weekly Summary.docx',
+                                        weekly_summary_template_path,{'{{date}}': week_start.strftime('%A %d %B %Y.'),
+                                                                      '{{weekly_summary}}': st.session_state['weekly_summary']})
+
+                    st.success('Weekly Summary exported successfully!')
+
+                except PermissionError:
+                    st.error('Please close the Word document and try again.')
+
+                except Exception as e:
+                    st.error(f'Could not export the Word document: {e}')

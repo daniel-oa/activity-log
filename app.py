@@ -5,8 +5,10 @@ from ai.gemini import generate_work_report, generate_daily_summary
 from utils.word_export import export_to_word, create_word_document
 from utils.app_mode import get_app_mode
 from utils.api_key import get_api_key, render_api_key_sidebar
+from utils.ui import load_css, page_header, date_label, section_heading, week_strip
 
 st.set_page_config(page_title='Activity Log')
+load_css()
 
 app_mode = get_app_mode()
 
@@ -90,41 +92,27 @@ if 'daily_summary' not in st.session_state:
         st.session_state['daily_summary'] = ''
 
 if selected_date.date() != st.session_state['work_report_date']:
-    st.session_state['work_report_date'] = selected_date.date()
-
-if selected_date.date() != st.session_state['daily_summary_date']:
-    st.session_state['daily_summary_date'] = selected_date.date()
-
-if app_mode == 'cloud':
-    from utils.records import load_record
-
-    st.session_state['work_report'] = load_record(date_str, 'work_report')
-    st.session_state['daily_summary'] = load_record(date_str, 'daily_summary')
-else:
-    if work_report_file_path.exists() and work_report_file_path.is_file():
+    if app_mode == 'cloud':
+        from utils.records import load_record
+        st.session_state['work_report'] = load_record(date_str, 'work_report')
+    elif work_report_file_path.exists() and work_report_file_path.is_file():
         st.session_state['work_report'] = work_report_file_path.read_text(encoding='utf-8')
     else:
         st.session_state['work_report'] = ''
+    st.session_state['work_report_date'] = selected_date.date()
 
-    if daily_summary_file_path.exists() and daily_summary_file_path.is_file():
+if selected_date.date() != st.session_state['daily_summary_date']:
+    if app_mode == 'cloud':
+        from utils.records import load_record
+        st.session_state['daily_summary'] = load_record(date_str, 'daily_summary')
+    elif daily_summary_file_path.exists() and daily_summary_file_path.is_file():
         st.session_state['daily_summary'] = daily_summary_file_path.read_text(encoding='utf-8')
     else:
         st.session_state['daily_summary'] = ''
-        
-st.markdown("""
-                <div style = 'text-align: center; margin-bottom: 4px;'>
-                    <div style = 'font-size: 40px; font-weight: 700;'>
-                        Activity Log
-                    </div>
-                    <div style = 'font-size: 16px; color: #888;'>
-                        Capture your day. Keep the details.
-                    </div>
-                </div>
-            """, unsafe_allow_html= True)
+    st.session_state['daily_summary_date'] = selected_date.date()
 
-st.markdown(f"""<div style = 'text-align: center;  font-size: 18px; font-weight: 500; margin-bottom: 18px;'>
-            {selected_date.strftime('%A %d %B, %Y')}
-            </div>""", unsafe_allow_html = True)
+page_header('Activity Log', 'Capture your day. Keep the details.')
+date_label(selected_date.strftime('%A %d %B, %Y'))
 
 previous,today,next = st.columns(3)
 with previous:
@@ -135,17 +123,7 @@ with next:
     if selected_date.date() < datetime.now().date():
         next_button = st.button('Next →',on_click=go_next, width='stretch')
 
-st.markdown(
-    """
-    <div style = 'font-size: 24px; font-weight: 600; margin-top: 32px; margin-bottom: 8px;'>
-        📖 Today's Activity
-    </div>
-    <div style = 'font-size: 15px; color: #888; margin-bottom: 8px;'>
-        Write freely. Don't worry about organizing it.
-    </div>
-    """,
-    unsafe_allow_html= True
-)
+section_heading("Today's Activity", "Write freely. Don't worry about organizing it.")
 text = st.text_area(' ', height = 'content', key='daily_text', label_visibility='collapsed')
 
 if st.button('Save Note', width='stretch', type='primary'):
@@ -156,11 +134,7 @@ if st.button('Save Note', width='stretch', type='primary'):
             file_path.write_text(text, encoding= 'utf-8')
         st.success('Note saved successfully.')
 
-st.markdown("""
-        <div style = 'font-size: 24px; font-weight: 600; margin-top: 32px; margin-bottom: 14px;'>
-            ✨ Create from today's notes
-        </div>
-        """, unsafe_allow_html= True)
+section_heading("Create from today's notes")
 
 left, right = st.columns([1,1])
 with left:
@@ -176,7 +150,7 @@ with left:
                 st.session_state['ai_error'] = None
             else:
                 st.session_state['ai_error'] = result['error']
-        
+
 with right:
     if st.button('Work Report',  width = 'stretch'):
         api_key = get_api_key()
@@ -190,7 +164,7 @@ with right:
                 st.session_state['ai_error'] = None
             else:
                 st.session_state['ai_error'] = result['error']
-    
+
 week_start = selected_date - timedelta(days=(selected_date.weekday()+1)%7)
 day_list = [week_start+timedelta(days=day) for day in range(7)]
 
@@ -210,95 +184,78 @@ for date in day_list:
 if st.session_state['ai_error']:
     st.error(f"AI generation failed: {st.session_state['ai_error']}")
 
+if st.session_state['daily_summary'] == '' and st.session_state['work_report'] == '':
+    st.markdown("<div class='al-empty'>Your generated daily summary and work report will appear here.</div>",
+                unsafe_allow_html=True)
+
 if st.session_state['daily_summary'] != '':
-    st.markdown("""<div style = 'font-size:24px; font-weight:600; margin-top:32px; margin-bottom: 8px'>
-                📔 Daily Summary
-                </div>""", unsafe_allow_html = True)
-    st.text_area('Edit Daily Summary', key = 'daily_summary', height = 'content')
-    if st.button('Save Daily Summary', width = 'stretch'):
+    section_heading('Daily Summary')
+    with st.container(border=True):
+        st.text_area('Edit Daily Summary', key = 'daily_summary', height = 'content')
+        if st.button('Save Daily Summary', width = 'stretch'):
+                if app_mode == 'cloud':
+                    from utils.records import save_record
+                    save_record(date_str, 'daily_summary', st.session_state['daily_summary'])
+                else:
+                    daily_summary_file_path.write_text(st.session_state['daily_summary'], encoding='utf-8')
+                st.success('Daily Summary saved successfully.')
+
+        if app_mode == 'cloud':
+            try:
+                word_buffer = create_word_document(daily_summary_template_path,
+                                                    {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
+                                                    '{{daily_summary}}': st.session_state['daily_summary']})
+                st.download_button('Download Daily Summary', data = word_buffer, file_name=f'{date_str} Daily Summary.docx',
+                                    mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                    key=f'download_daily_summary_{date_str}', width='stretch')
+            except Exception:
+                st.error('Could not prepare the Word document. Please try again.')
+        else:
+            if st.button('Export Daily Summary', width='stretch'):
+                try:
+                    with st.spinner('Exporting to Word...'):
+                        export_to_word(st.session_state['daily_summary'], folder_path/f'{date_str} Daily Summary.docx',
+                                       daily_summary_template_path, {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
+                                                                     '{{daily_summary}}': st.session_state['daily_summary']})
+                        st.success('Daily Summary exported successfully!')
+                except PermissionError:
+                    st.error('Please close the Word document and try again.')
+                except Exception:
+                    st.error('Could not export the Word document. Please try again.')
+
+if st.session_state['work_report'] != '':
+    section_heading('Work Report')
+    with st.container(border=True):
+        st.text_area('Edit Work Report', key = 'work_report', height = 'content')
+        if st.button('Save Work Report', width = 'stretch'):
             if app_mode == 'cloud':
                 from utils.records import save_record
-                save_record(date_str, 'daily_summary', st.session_state['daily_summary'])
+                save_record(date_str,'work_report', st.session_state['work_report'])
             else:
-                daily_summary_file_path.write_text(st.session_state['daily_summary'], encoding='utf-8')
-            st.success('Daily Summary saved successfully.')
-    
-    if app_mode == 'cloud':
-        try:
-            word_buffer = create_word_document(daily_summary_template_path,
-                                                {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
-                                                '{{daily_summary}}': st.session_state['daily_summary']})
-            st.download_button('Download Daily Summary', data = word_buffer, file_name=f'{date_str} Daily Summary.docx',
-                                mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
-                                key=f'download_daily_summary_{date_str}', width='stretch')
-        except Exception:
-            st.error('Could not prepare the Word document. Please try again.')
-    else:
-        if st.button('Export Daily Summary', width='stretch'):
-            try:
-                with st.spinner('Exporting to Word...'):
-                    export_to_word(st.session_state['daily_summary'], folder_path/f'{date_str} Daily Summary.docx',
-                                   daily_summary_template_path, {'{{date}}':selected_date.strftime('%A %d %B %Y.'),
-                                                                 '{{daily_summary}}': st.session_state['daily_summary']})
-                    st.success('Daily Summary exported successfully!')
-            except PermissionError:
-                st.error('Please close the Word document and try again.')
-            except Exception:
-                st.error('Could not export the Word document. Please try again.')
-if st.session_state['work_report'] != '':
-    st.markdown("""<div style = 'font-size:24px; font-weight:600; margin-top:32px; margin-bottom: 8px'>
-                    💼 Work Report
-                    </div>""", unsafe_allow_html = True)
-    st.text_area('Edit Work Report', key = 'work_report', height = 'content')
-    if st.button('Save Work Report', width = 'stretch'):
+                work_report_file_path.write_text(st.session_state['work_report'], encoding='utf-8')
+            st.success('Work Report saved successfully.')
+
         if app_mode == 'cloud':
-            from utils.records import save_record
-            save_record(date_str,'work_report', st.session_state['work_report'])
-        else:
-            work_report_file_path.write_text(st.session_state['work_report'], encoding='utf-8')
-        st.success('Work Report saved successfully.')
-    
-    if app_mode == 'cloud':
-        try:
-            word_buffer = create_word_document(work_report_template_path, {'{{date}}': selected_date.strftime('%A %d %B %Y.'), 
-                                                                            '{{work_report}}': st.session_state['work_report']})
-            st.download_button('Download Work Report',data=word_buffer,file_name=f'{date_str} Work Report.docx',
-                                mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                key=f'download_work_report_{date_str}', width='stretch')
-        except Exception:
-            st.error('Could not prepare the Word document. Please try again.')
-    else:
-        if st.button('Export Work Report', width='stretch'):
             try:
-                with st.spinner('Exporting to Word...'):
-                    export_to_word( st.session_state['work_report'], folder_path / f'{date_str} Work Report.docx',
-                        work_report_template_path, {'{{date}}': selected_date.strftime('%A %d %B %Y.'), 
-                                                    '{{work_report}}': st.session_state['work_report']})
-                st.success('Work Report exported successfully!')
-            except PermissionError:
-                st.error('Please close the Word document and try again.')
+                word_buffer = create_word_document(work_report_template_path, {'{{date}}': selected_date.strftime('%A %d %B %Y.'),
+                                                                                '{{work_report}}': st.session_state['work_report']})
+                st.download_button('Download Work Report',data=word_buffer,file_name=f'{date_str} Work Report.docx',
+                                    mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                    key=f'download_work_report_{date_str}', width='stretch')
             except Exception:
-                st.error('Could not export the Word document. Please try again.')
-st.markdown("""<div style = 'font-size:24px; font-weight:600; margin-top:32px; margin-bottom: 14px'>
-                🗓️ This Week
-                </div>""", unsafe_allow_html = True)
+                st.error('Could not prepare the Word document. Please try again.')
+        else:
+            if st.button('Export Work Report', width='stretch'):
+                try:
+                    with st.spinner('Exporting to Word...'):
+                        export_to_word( st.session_state['work_report'], folder_path / f'{date_str} Work Report.docx',
+                            work_report_template_path, {'{{date}}': selected_date.strftime('%A %d %B %Y.'),
+                                                        '{{work_report}}': st.session_state['work_report']})
+                    st.success('Work Report exported successfully!')
+                except PermissionError:
+                    st.error('Please close the Word document and try again.')
+                except Exception:
+                    st.error('Could not export the Word document. Please try again.')
 
-week_columns = st.columns(7) 
-for column, date in zip(week_columns, day_list):
-    with column:
-        is_today= date.date() == datetime.now().date()
-        has_record = exist_dict[date.strftime('%A %d %b')]
-        day_weight = '700' if is_today else '400'
-        day_color = '#000' if is_today else '#888'
-        status = '✓' if has_record else '—'
-
-        st.markdown(f"""
-                    <div style = 'text-align: center;'>
-                        <div style = 'font-size: 13px; font-weight: {day_weight}; color: {day_color};'>
-                            {date.strftime('%a')}
-                        </div>
-                        <div style = 'font-size: 20px; font-weight: 600; margin-top: 4px;'>
-                            {status}
-                        </div>
-                    </div>
-                    """,unsafe_allow_html= True)
+section_heading('This Week')
+week_strip(day_list, exist_dict)
