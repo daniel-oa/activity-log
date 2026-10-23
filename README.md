@@ -11,7 +11,7 @@ Less time formatting reports. More time getting things done.
 
 ## Screenshot
 
-![Activity Log application](images/activity-log.png)
+![Activity Log application](images/activity-lerog.png)
 
 ## What can it do?
 
