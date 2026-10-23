@@ -107,3 +107,7 @@ Activity Log is a work in progress. Planned improvements include:
 ## A note on AI-generated content
 
 Generated summaries and reports may need editing. Review the output for accuracy before using it as a formal record or submitting it as a work report.
+
+## Acknowledgements
+
+AI tools were used to assist with UI styling and visual design improvements. Application logic and functionality remain part of the project's existing implementation.
